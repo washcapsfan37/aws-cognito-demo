@@ -1,4 +1,4 @@
-group 'mp-pistachio'
+group 'markburgess.net'
 version '1.0-SNAPSHOT'
 
 buildscript {

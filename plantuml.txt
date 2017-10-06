@@ -1,3 +1,0 @@
-@startuml
-car --|> wheel2
-@enduml
