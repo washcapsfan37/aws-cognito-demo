@@ -1,0 +1,9 @@
+server:
+    port: 8080
+
+com:
+  mobileposse:
+    aws:
+      profile: mpdevsandbox
+      cognito:
+        identityPoolId: us-east-1:c5a66513-202d-4693-881d-45261e789bab

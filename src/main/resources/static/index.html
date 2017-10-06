@@ -1,0 +1,227 @@
+<!DOCTYPE HTML>
+<html ng-app="demo">
+<head>
+    <title>Cognito Sync</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    <style>
+        label {
+            margin-right: 10px;
+        }
+
+        div#content {
+            padding: 30px 0 0 50px;
+        }
+
+        div#left {
+            width: 600px;
+            float: left;
+            height: 1000px;
+        }
+
+        div#right {
+            width: 700px;
+            float: left;
+            height: 1000px;
+        }
+
+        button.idBtn {
+            margin-left: 10px;
+        }
+
+        button.recordBtn {
+            margin-left: 10px;
+        }
+
+        ul#identities li {
+            height: 50px;
+        }
+
+        ul#datasets li {
+            height: 50px;
+        }
+
+        ul#records li {
+            height: 50px;
+        }
+    </style>
+</head>
+<body>
+<script>
+    console.log('Loading JS...');
+    angular.module('demo', [])
+        .controller('IndexCntl', function($scope, $http) {
+            console.log('Starting app...');
+
+            $scope.getIdentities = function() {
+                console.log('Getting identities...');
+                $http.get('/rest/api/cognito')
+                    .success(function (response) {
+                        console.log('Response from API => ' + JSON.stringify(response));
+                        $scope.identities = response.identities;
+                    });
+            };
+
+            $scope.getDatasets = function(identityId) {
+                console.log('Getting datasets for ' + identityId);
+                $http.get('/rest/api/cognito/id/' + identityId)
+                    .success(function (response) {
+                        console.log('Response from API => ' + JSON.stringify(response));
+                        $scope.selectedIdentity = {
+                            id: identityId,
+                            datasets: response.datasets
+                        };
+                    });
+            };
+
+            $scope.deleteDataset = function(datasetName) {
+                console.log('Deleting dataset ' + datasetName);
+                $http.delete('/rest/api/cognito/id/' + $scope.selectedIdentity.id + '/dataset/' + datasetName)
+                    .success(function (response) {
+                        console.log('Response from API => ' + JSON.stringify(response));
+                        alert('Deleted!  Refreshing datasets...');
+                        $scope.getDatasets($scope.selectedIdentity.id);
+                    });
+            };
+
+            $scope.getRecords = function(datasetName) {
+                console.log('Getting records for dataset ' + datasetName);
+                $http.get('/rest/api/cognito/id/' + $scope.selectedIdentity.id + '/dataset/' + datasetName)
+                    .success(function (response) {
+                        console.log('Response from API => ' + JSON.stringify(response));
+                        $scope.selectedIdentity.selectedDataset = {
+                            id: datasetName,
+                            records: response.records,
+                            syncSessionToken: response.syncSessionToken
+                        };
+                    });
+            };
+
+            $scope.updateRecord = function (record) {
+                var value = document.getElementById(record.key).value;
+                console.log('Updating record ' + record.key + ' with value => ' + value);
+                var data = {
+                    key: record.key,
+                    value: value,
+                    syncCount: record.syncCount,
+                    syncSessionToken: $scope.selectedIdentity.selectedDataset.syncSessionToken
+                };
+
+                var options = {
+                    contentType: "application/json",
+                    dataType: "json"
+                };
+
+                console.log('DATA => ' + JSON.stringify(data));
+
+                var url = '/rest/api/cognito/id/' + $scope.selectedIdentity.id + '/dataset/' + $scope.selectedIdentity.selectedDataset.id;
+                $http.post(url, data, options)
+                    .success(function (response) {
+                        alert('Updated!  Refreshing records...');
+                        $scope.getRecords($scope.selectedIdentity.selectedDataset.id);
+                    })
+                    .error(function (response) {
+                        alert('Failed to update => ' + JSON.stringify(response));
+                    });
+            };
+
+            $scope.newRecord = {
+                key: null,
+                value: null,
+                syncCount: 0
+            };
+
+            $scope.addRecord = function () {
+                var record = $scope.newRecord;
+                var data = {
+                    key: record.key,
+                    value: record.value,
+                    syncCount: record.syncCount,
+                    syncSessionToken: $scope.selectedIdentity.selectedDataset.syncSessionToken
+                };
+
+                var options = {
+                    contentType: "application/json",
+                    dataType: "json"
+                };
+
+                console.log('DATA => ' + JSON.stringify(data));
+
+                var url = '/rest/api/cognito/id/' + $scope.selectedIdentity.id + '/dataset/' + $scope.selectedIdentity.selectedDataset.id;
+                $http.post(url, data, options)
+                    .success(function (response) {
+                        alert('Updated!  Refreshing records...');
+                        $scope.newRecord = {
+                            key: null,
+                            value: null,
+                            syncCount: 0
+                        };
+                        $scope.getRecords($scope.selectedIdentity.selectedDataset.id);
+                    })
+                    .error(function (response) {
+                        alert('Failed to update => ' + JSON.stringify(response));
+                    });
+            };
+
+            $scope.deleteRecord = function (record) {
+                console.log('Deleting record ' + record.key);
+                var url = '/rest/api/cognito/id/' + $scope.selectedIdentity.id + '/dataset/' + $scope.selectedIdentity.selectedDataset.id + '/record/' + record.key;
+                url += '?syncSessionToken=' + encodeURIComponent($scope.selectedIdentity.selectedDataset.syncSessionToken) + '&syncCount=' + record.syncCount;
+                $http.delete(url)
+                    .success(function (response) {
+                        alert('Deleted!  Refreshing records...');
+                        $scope.getRecords($scope.selectedIdentity.selectedDataset.id);
+                    })
+                    .error(function (response) {
+                        alert('Failed to update => ' + JSON.stringify(response));
+                    });
+
+            };
+
+            $scope.getIdentities();
+        });
+</script>
+<div id="content" ng-controller="IndexCntl">
+    <form role="form">
+        <div id="left">
+            <h3>Identities:</h3>
+            <ul id="identities">
+                <li ng-repeat="identity in identities">
+                    <span>{{identity.identityId}}</span>
+                    <button class="btn btn-primary idBtn" ng-click="getDatasets(identity.identityId)">Get Identity Datasets</button>
+                </li>
+            </ul>
+        </div>
+        <div id="right" ng-show="selectedIdentity.id">
+            <div>Identity ID: {{selectedIdentity.id}}</div>
+            <div id="datasetContainer">
+                <h4>Data Sets:</h4>
+                <ul id="datasets">
+                    <li ng-repeat="dataset in selectedIdentity.datasets">
+                        <span>{{dataset.datasetName}}</span>
+                        <button class="btn btn-primary idBtn" ng-click="getRecords(dataset.datasetName)">Get Records</button>
+                        <button class="btn btn-primary idBtn" ng-click="deleteDataset(dataset.datasetName)">Delete Dataset</button>
+                    </li>
+                </ul>
+            </div>
+            <div id="recordContainer" ng-show="selectedIdentity.selectedDataset.id">
+                <h4>Records</h4>
+                <div>Selected dataset: {{selectedIdentity.selectedDataset.id}}</div>
+                <ul id="records">
+                    <li ng-repeat="record in selectedIdentity.selectedDataset.records">
+                        {{record.key}} => <input type="text" value="{{record.value}}" id="{{record.key}}"/>
+                        <button class="btn btn-primary recordBtn" ng-click="updateRecord(record)">Update</button>
+                        <button class="btn btn-primary recordBtn" ng-click="deleteRecord(record)">Delete</button>
+                    </li>
+                    <li>
+                        <input type="text" ng-model="newRecord.key"/> => <input type="text" ng-model="newRecord.value"/>
+                        <button class="btn btn-primary recordBtn" ng-click="addRecord(record)">Add</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+</html>

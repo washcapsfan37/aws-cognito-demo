@@ -1,0 +1,37 @@
+group 'mp-pistachio'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'org.springframework.boot', name: 'spring-boot-gradle-plugin', version: '1.5.4.RELEASE'
+        classpath group: 'com.amazonaws', name: 'aws-java-sdk-core', version: '1.11.133'
+    }
+}
+
+
+apply plugin: 'groovy'
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
+    compile group: 'org.springframework.boot', name: 'spring-boot-actuator-docs'
+    compile group: 'org.springframework.boot', name: 'spring-boot-devtools'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-cognitoidentity', version: '1.11.180'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-cognitosync', version: '1.11.180'
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test'
+}
